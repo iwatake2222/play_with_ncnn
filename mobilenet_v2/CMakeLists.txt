@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 2.8.10)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 # Create executable file
 set(PROJECT_NAME play_with_ncnn_mobilenet_v2)
