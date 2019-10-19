@@ -19,14 +19,30 @@ git submodule update
 
 You may see `Protobuf not found, caffe model convert tool won't be built` warning, but you can ignore it. Or, you can disable `NCNN_BUILD_TOOLS`
 
-### Windows (PC Ubuntu, Raspberry Pi, Jetson Nano, etc.)
+### Linux (PC Ubuntu, Raspberry Pi, Jetson Nano, etc.)
 ```
 cd mobilenet_v2   # for example
 mkdir build && cd build
+
+# For PC Linux
 cmake ..
+
+# For Raspberry Pi
+cmake -DCMAKE_TOOLCHAIN_FILE=../../ncnn/toolchains/pi3.toolchain.cmake -DPI3=ON  ..
+
+# For Jetson Nano (without vulkan)
+cmake -DCMAKE_TOOLCHAIN_FILE=../../ncnn/toolchains/jetson.toolchain.cmake -DNCNN_VULKAN=OFF ..
+
+# For Jetson Nano (in case the above command fails)
+cmake ..
+
 make
 ./play_with_ncnn_mobilenet_v2
 ```
+
+## Note
+- I recommend you generate library (.a, .lib) and keep them. So that you don't need to build ncnn library every time.
+	- this project structure and cmake may be useful: https://github.com/iwatake2222/NcnnMultiPlatformProject
 
 ## Acknowledge
 - This project includes external library:
