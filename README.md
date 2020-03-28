@@ -12,39 +12,26 @@ git submodule update
 
 ### Windows (Visual Studio)
 - Configure and Generate a new project using cmake-gui for Visual Studio 2017 64-bit
-	- `Where is the source code` : path-to-play_with_ncnn/mobilenet_v2	(for example)
+	- `Where is the source code` : path-to-play_with_ncnn/project_cls_mobilenet_v2	(for example)
 	- `Where to build the binaries` : path-to-build	(any)
-- Open `play_with_ncnn_mobilenet_v2.sln`
-- Set `play_with_ncnn_mobilenet_v2` project as a startup project, then build and run!
+- Open `main.sln`
+- Set `main` project as a startup project, then build and run!
 
-You may see `Protobuf not found, caffe model convert tool won't be built` warning, but you can ignore it. Or, you can disable `NCNN_BUILD_TOOLS`
 
 ### Linux (PC Ubuntu, Raspberry Pi, Jetson Nano, etc.)
 ```
-cd mobilenet_v2   # for example
+cd project_cls_mobilenet_v2   # for example
 mkdir build && cd build
 
-# For PC Linux
-cmake ..
-
-# For Raspberry Pi
-cmake -DCMAKE_TOOLCHAIN_FILE=../../ncnn/toolchains/pi3.toolchain.cmake -DPI3=ON  ..
-
-# For Jetson Nano (without vulkan)
-cmake -DCMAKE_TOOLCHAIN_FILE=../../ncnn/toolchains/jetson.toolchain.cmake -DNCNN_VULKAN=OFF ..
-
-# For Jetson Nano (in case the above command fails)
-cmake ..
+cmake ..	# For PC Linux
+cmake .. -DARCH_TYPE=armv7	# For Raspberry Pi 3, 4 (Raspbian(32-bit))
+cmake .. -DARCH_TYPE=aarch64	# For Jetson Nano (AArch64(ARMv8))
 
 make
-./play_with_ncnn_mobilenet_v2
+./main
 ```
 
-## Note
-- I recommend you generate library (.a, .lib) and keep them. So that you don't need to build ncnn library every time.
-	- this project structure and cmake may be useful: https://github.com/iwatake2222/NcnnMultiPlatformProject
-
-## Acknowledge
+## Acknowledgement
 - This project includes external library:
 	- ncnn (https://github.com/Tencent/ncnn)
 - This project includes models:
