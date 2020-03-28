@@ -7,6 +7,10 @@
 
 #define MODEL_PARAM_NAME RESOURCE_DIR"/model/mobilenetv2-1.0.param"
 #define MODEL_BIN_NAME   RESOURCE_DIR"/model/mobilenetv2-1.0.bin"
+//#define MODEL_PARAM_NAME RESOURCE_DIR"/model/mobilenetv2-1.0_nobn.param"
+//#define MODEL_BIN_NAME   RESOURCE_DIR"/model/mobilenetv2-1.0_nobn.bin"
+//#define MODEL_PARAM_NAME RESOURCE_DIR"/model/mobilenetv2-1.0_int8.param"
+//#define MODEL_BIN_NAME   RESOURCE_DIR"/model/mobilenetv2-1.0_int8.bin"
 #define MODEL_WIDTH 224
 #define MODEL_HEIGHT 224
 #define MODEL_CHANNEL ncnn::Mat::PIXEL_BGR
