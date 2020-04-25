@@ -1,74 +1,45 @@
 cmake_minimum_required(VERSION 3.0)
 
+# Create project
 set(ProjectName "main")
+project(${ProjectName})
 
-# Switch build target
-set(ARCH_TYPE x64 CACHE STRING "Build target? [x64, armv7, aarch64]")
-if(${ARCH_TYPE} STREQUAL armv7)
-	message("[BUILD] armv7")
-elseif(${ARCH_TYPE} STREQUAL aarch64)
-	message("[BUILD] aarch64")
-else()
-	if(WIN32)
-		message("[BUILD] windows (x64)")
-		set(ARCH_TYPE x64_windows)
+# Switch build system
+set(BUILD_SYSTEM auto CACHE STRING "Build target? [auto, x64_windows, x64_linux, armv7, aarch64]")
+if(${BUILD_SYSTEM} STREQUAL "auto")
+	if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "armv7l")
+		set(BUILD_SYSTEM armv7)
+	elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64")
+		set(BUILD_SYSTEM aarch64)
 	else()
-		message("[BUILD] linux (x64)")
-		set(ARCH_TYPE x64_linux)
+		if(WIN32)
+			set(BUILD_SYSTEM x64_windows)
+		else()
+			set(BUILD_SYSTEM x64_linux)
+		endif()
 	endif()
 endif()
+message("[main] CMAKE_SYSTEM_PROCESSOR = " ${CMAKE_SYSTEM_PROCESSOR} ", BUILD_SYSTEM = " ${BUILD_SYSTEM})
 
 # Compile option
-if(NOT WIN32)
-	set(CMAKE_CXX_FLAGS "-Wall -std=c++11")
-	set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
-	set(CMAKE_CXX_FLAGS_DEBUG "-g3")
+if(NOT MSVC)
+	set(CMAKE_C_FLAGS "-Wall")
+	set(CMAKE_C_FLAGS_RELEASE "-O2 -DNDEBUG")
+	set(CMAKE_C_FLAGS_DEBUG "-g3 -O0")
+	set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++11 -lstdc++")
+	set(CMAKE_CXX_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
+	set(CMAKE_CXX_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
 	if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 		message(STATUS "No build type selected, default to Release")
 		set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type (default Debug)" FORCE)
 	endif()
 endif()
 
-# Create project
-project(${ProjectName})
+# Create executable file
 add_executable(${ProjectName} Main.cpp)
 
-
 # For ncnn
-set(USE_PREBUILT_NCNN on CACHE BOOL "Use Prebuilt ncnn? [on/off]")
-if(USE_PREBUILT_NCNN)
-	if(MSVC_VERSION)
-		if((MSVC_VERSION GREATER_EQUAL 1910) AND (MSVC_VERSION LESS 1920))
-			target_link_libraries(${ProjectName}
-				$<$<CONFIG:Debug>:${CMAKE_SOURCE_DIR}/../third_party/ncnn_prebuilt/x64_windows/lib/ncnnd.lib>
-				$<$<CONFIG:RelWithDebInfo>:${CMAKE_SOURCE_DIR}/../third_party/ncnn_prebuilt/x64_windows/lib/ncnnRelWithDebInfo.lib>
-				$<$<CONFIG:Release>:${CMAKE_SOURCE_DIR}/../third_party/ncnn_prebuilt/x64_windows/lib/ncnn.lib>
-				$<$<CONFIG:MinSizeRel>:${CMAKE_SOURCE_DIR}/../third_party/ncnn_prebuilt/x64_windows/lib/ncnnMinSizeRel.lib>
-			)
-		else()
-			message(FATAL_ERROR "unsupported MSVC version")
-		endif()
-	else()
-		target_link_libraries(${ProjectName}
-			# $<$<STREQUAL:${ARCH_TYPE},x64_windows>:${CMAKE_SOURCE_DIR}/../third_party/ncnn_prebuilt/x64_windows/lib/ncnn.lib>
-			$<$<STREQUAL:${ARCH_TYPE},x64_linux>:${CMAKE_SOURCE_DIR}/../third_party/ncnn_prebuilt/x64_linux/lib/libncnn.a>
-			$<$<STREQUAL:${ARCH_TYPE},armv7>:${CMAKE_SOURCE_DIR}/../third_party/ncnn_prebuilt/armv7/lib/libncnn.a>
-			$<$<STREQUAL:${ARCH_TYPE},aarch64>:${CMAKE_SOURCE_DIR}/../third_party/ncnn_prebuilt/aarch64/lib/libncnn.a>
-		)
-	endif()
-	target_include_directories(${ProjectName} PUBLIC
-		$<$<STREQUAL:${ARCH_TYPE},x64_windows>:${CMAKE_SOURCE_DIR}/../third_party/ncnn_prebuilt/x64_windows/inc/>
-		$<$<STREQUAL:${ARCH_TYPE},x64_linux>:${CMAKE_SOURCE_DIR}/../third_party/ncnn_prebuilt/x64_linux/inc/>
-		$<$<STREQUAL:${ARCH_TYPE},armv7>:${CMAKE_SOURCE_DIR}/../third_party/ncnn_prebuilt/armv7/inc/>
-		$<$<STREQUAL:${ARCH_TYPE},aarch64>:${CMAKE_SOURCE_DIR}/../third_party/ncnn_prebuilt/aarch64/inc/>
-	)
-	# target_include_directories(${ProjectName} PUBLIC ${CMAKE_SOURCE_DIR}/../third_party/ncnn/src)
-else()
-	set(NCNN_DIR ${CMAKE_SOURCE_DIR}/../third_party/ncnn/src)
-	add_subdirectory(${NCNN_DIR} ncnn)
-	target_link_libraries(${PROJECT_NAME} ncnn)
-	target_include_directories(${PROJECT_NAME} PUBLIC ${NCNN_DIR}/src)
-endif()
+include(${CMAKE_SOURCE_DIR}/../third_party/cmakes/ncnn.cmake)
 
 # For OpenCV
 find_package(OpenCV REQUIRED)

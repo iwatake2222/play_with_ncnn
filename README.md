@@ -22,11 +22,7 @@ git submodule update
 ```
 cd project_cls_mobilenet_v2   # for example
 mkdir build && cd build
-
-cmake ..	# For PC Linux
-cmake .. -DARCH_TYPE=armv7	# For Raspberry Pi 3, 4 (Raspbian(32-bit))
-cmake .. -DARCH_TYPE=aarch64	# For Jetson Nano (AArch64(ARMv8))
-
+cmake ..
 make
 ./main
 ```
