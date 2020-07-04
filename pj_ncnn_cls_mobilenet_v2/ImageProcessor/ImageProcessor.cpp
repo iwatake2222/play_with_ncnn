@@ -1,6 +1,8 @@
 /*** Include ***/
 /* for general */
 #include <stdio.h>
+#include <stdlib.h>
+#include <string>
 #include <algorithm>
 #include <fstream>
 #include <functional>
@@ -8,6 +10,7 @@
 #include <sstream>
 #include <vector>
 #include <chrono>
+
 
 /* for OpenCV */
 #include <opencv2/opencv.hpp>
@@ -47,7 +50,7 @@ static void readLabel(const char* filename, std::vector<std::string> & labels)
 {
 	std::ifstream ifs(filename);
 	if (ifs.fail()) {
-		printf("failed to read %s\n", filename);
+		PRINT("failed to read %s\n", filename);
 		return;
 	}
 	std::string str;
@@ -112,7 +115,7 @@ int ImageProcessor_process(cv::Mat *mat, OUTPUT_PARAM *outputParam)
 
 	/* Contain the results */
 	outputParam->classId = maxIndex;
-	strcpy_s(outputParam->label, sizeof(outputParam->label), s_labels[maxIndex].c_str());
+	snprintf(outputParam->label, sizeof(outputParam->label), s_labels[maxIndex].c_str());
 	outputParam->score = maxScore;
 	
 	return 0;
