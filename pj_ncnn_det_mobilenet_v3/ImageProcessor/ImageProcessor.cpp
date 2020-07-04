@@ -1,6 +1,8 @@
 /*** Include ***/
 /* for general */
 #include <stdio.h>
+#include <stdlib.h>
+#include <string>
 #include <algorithm>
 #include <fstream>
 #include <functional>
@@ -81,7 +83,7 @@ static void readLabel(const char* filename, std::vector<std::string> & labels)
 {
 	std::ifstream ifs(filename);
 	if (ifs.fail()) {
-		printf("failed to read %s\n", filename);
+		PRINT("failed to read %s\n", filename);
 		return;
 	}
 	std::string str;
@@ -130,7 +132,7 @@ int ImageProcessor_process(cv::Mat *mat, OUTPUT_PARAM *outputParam)
 	getBBox(bboxList, ncnnOut, 0.2, mat->cols, mat->rows);
 	
 	/* Display bbox */
-	for (int i = 0; i < bboxList.size(); i++) {
+	for (int i = 0; i < (int)bboxList.size(); i++) {
 		const BBox bbox = bboxList[i];
 		cv::rectangle(*mat, cv::Rect((int)bbox.x, (int)bbox.y, (int)bbox.w, (int)bbox.h), cv::Scalar(255, 255, 0), 3);
 		cv::putText(*mat, s_labels[bbox.classId], cv::Point((int)bbox.x, (int)bbox.y + 10), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0, 0, 0), 3);
@@ -143,7 +145,7 @@ int ImageProcessor_process(cv::Mat *mat, OUTPUT_PARAM *outputParam)
 	for (int i = 0; i < outputParam->resultNum; i++) {
 		const BBox bbox = bboxList[i];
 		outputParam->RESULTS[i].classId = bbox.classId;
-		strcpy_s(outputParam->RESULTS[i].label, sizeof(outputParam->RESULTS[i].label), s_labels[bbox.classId].c_str());
+		snprintf(outputParam->RESULTS[i].label, sizeof(outputParam->RESULTS[i].label), s_labels[bbox.classId].c_str());
 		outputParam->RESULTS[i].score = bbox.score;
 		outputParam->RESULTS[i].x = (int)bbox.x;
 		outputParam->RESULTS[i].y = (int)bbox.y;
