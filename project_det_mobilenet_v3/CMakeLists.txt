@@ -38,24 +38,18 @@ endif()
 # Create executable file
 add_executable(${ProjectName} Main.cpp)
 
-# For ncnn
-include(${CMAKE_SOURCE_DIR}/../third_party/cmakes/ncnn.cmake)
+# Link ImageProcessor module
+add_subdirectory(./ImageProcessor ImageProcessor)
+target_include_directories(${ProjectName} PUBLIC ./ImageProcessor)
+target_link_libraries(${ProjectName} ImageProcessor)
 
 # For OpenCV
 find_package(OpenCV REQUIRED)
-if(OpenCV_FOUND)
-	target_include_directories(${PROJECT_NAME} PUBLIC ${OpenCV_INCLUDE_DIRS})
-	target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
-endif()
+target_include_directories(${ProjectName} PUBLIC ${OpenCV_INCLUDE_DIRS})
+target_link_libraries(${ProjectName} ${OpenCV_LIBS})
 
-# For OpenMP
-find_package(OpenMP REQUIRED)
-if(OpenMP_FOUND)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-endif()
 
 # Copy resouce
-file(COPY ${PROJECT_SOURCE_DIR}/model DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/resource/)
-file(COPY ${PROJECT_SOURCE_DIR}/../resource/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/resource/)
-add_definitions(-DRESOURCE_DIR="${CMAKE_CURRENT_BINARY_DIR}/resource/")
+file(COPY ${CMAKE_CURRENT_LIST_DIR}/../resource DESTINATION ${CMAKE_BINARY_DIR}/)
+add_definitions(-DRESOURCE_DIR="${CMAKE_BINARY_DIR}/resource/")
+
