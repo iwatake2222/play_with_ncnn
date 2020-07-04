@@ -20,7 +20,7 @@ git submodule update
 
 ### Linux (PC Ubuntu, Raspberry Pi, Jetson Nano, etc.)
 ```
-cd project_cls_mobilenet_v2   # for example
+cd pj_ncnn_cls_mobilenet_v2   # for example
 mkdir build && cd build
 cmake ..
 make
