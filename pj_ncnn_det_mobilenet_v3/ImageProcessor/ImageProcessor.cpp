@@ -145,7 +145,7 @@ int ImageProcessor_process(cv::Mat *mat, OUTPUT_PARAM *outputParam)
 	for (int i = 0; i < outputParam->resultNum; i++) {
 		const BBox bbox = bboxList[i];
 		outputParam->RESULTS[i].classId = bbox.classId;
-		snprintf(outputParam->RESULTS[i].label, sizeof(outputParam->RESULTS[i].label), s_labels[bbox.classId].c_str());
+		snprintf(outputParam->RESULTS[i].label, sizeof(outputParam->RESULTS[i].label), "%s", s_labels[bbox.classId].c_str());
 		outputParam->RESULTS[i].score = bbox.score;
 		outputParam->RESULTS[i].x = (int)bbox.x;
 		outputParam->RESULTS[i].y = (int)bbox.y;
