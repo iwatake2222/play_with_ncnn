@@ -17,6 +17,7 @@
 #define IMAGE_NAME   RESOURCE_DIR"/cat.jpg"
 
 /* Settings */
+//#define TEST_SPEED_ONLY
 #define LOOP_NUM_FOR_TIME_MEASUREMENT 10
 
 int main()
@@ -27,6 +28,7 @@ int main()
 	strcpy_s(inputParam.labelFilename, sizeof(inputParam.labelFilename), LABEL_NAME);
 	ImageProcessor_initialize(MODEL_NAME, &inputParam);
 
+#ifdef TEST_SPEED_ONLY
 	/* Read an input image */
 	cv::Mat originalImage = cv::imread(IMAGE_NAME);
 
@@ -46,10 +48,47 @@ int main()
 	std::chrono::duration<double> timeSpan = t1 - t0;
 	printf("Inference time = %f [msec]\n", timeSpan.count() * 1000.0 / LOOP_NUM_FOR_TIME_MEASUREMENT);
 
+#else
+	/* Initialize camera */
+	int originalImageWidth = 640;
+	int originalImageHeight = 480;
+
+	static cv::VideoCapture cap;
+	cap = cv::VideoCapture(0);
+	cap.set(cv::CAP_PROP_FRAME_WIDTH, originalImageWidth);
+	cap.set(cv::CAP_PROP_FRAME_HEIGHT, originalImageHeight);
+	// cap.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('B', 'G', 'R', '3'));
+	cap.set(cv::CAP_PROP_BUFFERSIZE, 1);
+	while (1) {
+		const auto& timeAll0 = std::chrono::steady_clock::now();
+		/*** Read image ***/
+		const auto& timeCap0 = std::chrono::steady_clock::now();
+		cv::Mat originalImage;
+		cap.read(originalImage);
+		const auto& timeCap1 = std::chrono::steady_clock::now();
+
+		/* Call image processor library */
+		const auto& timeProcess0 = std::chrono::steady_clock::now();
+		OUTPUT_PARAM outputParam;
+		ImageProcessor_process(&originalImage, &outputParam);
+		const auto& timeProcess1 = std::chrono::steady_clock::now();
+
+		cv::imshow("test", originalImage);
+		if (cv::waitKey(1) == 'q') break;
+		const auto& timePost1 = std::chrono::steady_clock::now();
+
+		const auto& timeAll1 = std::chrono::steady_clock::now();
+		printf("Total time = %.3lf [msec]\n", (timeAll1 - timeAll0).count() / 1000000.0);
+		printf("Capture time = %.3lf [msec]\n", (timeCap1 - timeCap0).count() / 1000000.0);
+		printf("Image processing time = %.3lf [msec]\n", (timeProcess1 - timeProcess0).count() / 1000000.0);
+		printf("========\n");
+	}
+
+#endif
+
+
 	/* Fianlize image processor library */
 	ImageProcessor_finalize();
-
-	cv::waitKey(-1);
 
 	return 0;
 }
