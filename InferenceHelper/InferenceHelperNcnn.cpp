@@ -48,6 +48,10 @@ int32_t InferenceHelperNcnn::initialize(const std::string& modelFilename, std::v
 {
 	/*** Create network ***/
 	m_net.reset(new ncnn::Net());
+	m_net->opt.use_fp16_arithmetic = true;
+	m_net->opt.use_fp16_packed = true;
+	m_net->opt.use_fp16_storage = true;
+
 	if (m_net->load_param((std::string(modelFilename) + ".param").c_str()) != 0) {
 		PRINT_E("Failed to load model param file (%s)\n", modelFilename.c_str());
 		return RET_ERR;
@@ -56,7 +60,6 @@ int32_t InferenceHelperNcnn::initialize(const std::string& modelFilename, std::v
 		PRINT_E("Failed to load model bin file (%s)\n", modelFilename.c_str());
 		return RET_ERR;
 	}
-
 	return RET_OK;
 };
 

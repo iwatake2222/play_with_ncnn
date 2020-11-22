@@ -96,7 +96,7 @@ int32_t ClassificationEngine::initialize(const std::string& workDir, const int32
 	if (!m_inferenceHelper) {
 		return RET_ERR;
 	}
-	if (m_inferenceHelper->setNumThread(4) != InferenceHelper::RET_OK) {
+	if (m_inferenceHelper->setNumThread(numThreads) != InferenceHelper::RET_OK) {
 		m_inferenceHelper.reset();
 		return RET_ERR;
 	}
