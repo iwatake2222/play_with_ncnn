@@ -39,3 +39,5 @@ make
 	- mobilenetv3_ssdlite_voc:
 		- direct link(may not work in the future): https://drive.google.com/file/d/11_C_ko-arXnzM60udcXOMM5_PDNXuCcs/view?usp=sharing
 		- URL: https://github.com/ujsyehao/mobilenetv3-ssd
+	- pj_ncnn_det_nanodet
+		- URL: https://github.com/RangiLyu/nanodet
