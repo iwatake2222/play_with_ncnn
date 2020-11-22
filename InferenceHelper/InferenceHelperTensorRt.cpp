@@ -222,7 +222,7 @@ int InferenceHelperTensorRt::finalize(void)
 int32_t InferenceHelperTensorRt::preProcess(const std::vector<InputTensorInfo>& inputTensorInfoList)
 {
 	for (const auto& inputTensorInfo : inputTensorInfoList) {
-		if (inputTensorInfo.dataType == InputTensorInfo::DATA_TYPE_IMAGE_BGR || inputTensorInfo.dataType == InputTensorInfo::DATA_TYPE_IMAGE_RGB) {
+		if (inputTensorInfo.dataType == InputTensorInfo::DATA_TYPE_IMAGE) {
 			if ((inputTensorInfo.imageInfo.width != inputTensorInfo.imageInfo.cropWidth) || (inputTensorInfo.imageInfo.height != inputTensorInfo.imageInfo.cropHeight)) {
 				PRINT_E("Crop is not supported\n");
 				return  RET_ERR;
