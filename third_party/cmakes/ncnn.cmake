@@ -1,8 +1,8 @@
 set(USE_PREBUILT_NCNN on CACHE BOOL "Use Prebuilt ncnn? [on/off]")
 if(USE_PREBUILT_NCNN)
 	if(DEFINED  ANDROID_ABI)
-		set(NCNN_LIB ${CMAKE_CURRENT_LIST_DIR}/../ncnn_prebuilt/android/${ANDROID_ABI}/libncnn.a)
-		set(NCNN_INC ${CMAKE_CURRENT_LIST_DIR}/../ncnn_prebuilt/android/include/ncnn)
+		set(NCNN_LIB ${CMAKE_CURRENT_LIST_DIR}/../ncnn_prebuilt/android/${ANDROID_ABI}/lib/libncnn.a)
+		set(NCNN_INC ${CMAKE_CURRENT_LIST_DIR}/../ncnn_prebuilt/android/${ANDROID_ABI}/include/ncnn)
 	elseif(MSVC_VERSION)
 		if((MSVC_VERSION GREATER_EQUAL 1910) AND (MSVC_VERSION LESS 1920))
 			set(NCNN_LIB
