@@ -1,129 +1,115 @@
 /*** Include ***/
 /* for general */
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdint>
+#include <cstdlib>
+#include <cmath>
+#include <cstring>
 #include <string>
-#include <algorithm>
-#include <fstream>
-#include <functional>
-#include <memory>
-#include <sstream>
 #include <vector>
+#include <array>
+#include <algorithm>
 #include <chrono>
-
+#include <fstream>
+#include <memory>
 
 /* for OpenCV */
 #include <opencv2/opencv.hpp>
 
-/* for ncnn */
-#include "net.h"
-
+/* for My modules */
+#include "CommonHelper.h"
+#include "ClassificationEngine.h"
 #include "ImageProcessor.h"
 
 /*** Macro ***/
-#if defined(ANDROID) || defined(__ANDROID__)
-#include <android/log.h>
-#define TAG "MyApp_NDK"
-#define PRINT(...) __android_log_print(ANDROID_LOG_INFO, TAG, __VA_ARGS__)
+#define TAG "ImageProcessor"
+#define PRINT(...)   COMMON_HELPER_PRINT(TAG, __VA_ARGS__)
+#define PRINT_E(...) COMMON_HELPER_PRINT_E(TAG, __VA_ARGS__)
+
+/*** Global variable ***/
+std::unique_ptr<ClassificationEngine> s_classificationEngine;
+
+/*** Function ***/
+static cv::Scalar createCvColor(int32_t b, int32_t g, int32_t r) {
+#ifdef CV_COLOR_IS_RGB
+	return cv::Scalar(r, g, b);
 #else
-#define PRINT(...) printf(__VA_ARGS__)
+	return cv::Scalar(b, g, r);
 #endif
-
-#define CHECK(x)                              \
-  if (!(x)) {                                                \
-	PRINT("Error at %s:%d\n", __FILE__, __LINE__); \
-	exit(1);                                                 \
-  }
-
-/* Settings */
-#define MODEL_WIDTH 224
-#define MODEL_HEIGHT 224
-#define MODEL_CHANNEL ncnn::Mat::PIXEL_BGR
-#define NCNN_CPU_NUM 4
-
-/*** Global variables ***/
-static ncnn::Net *s_net;
-static std::vector<std::string> s_labels;
-
-/*** Functions ***/
-static void readLabel(const char* filename, std::vector<std::string> & labels)
-{
-	std::ifstream ifs(filename);
-	if (ifs.fail()) {
-		PRINT("failed to read %s\n", filename);
-		return;
-	}
-	std::string str;
-	while (getline(ifs, str)) {
-		labels.push_back(str);
-	}
 }
 
 
-int ImageProcessor_initialize(const char *modelFilename, INPUT_PARAM *inputParam)
+int32_t ImageProcessor_initialize(const INPUT_PARAM* inputParam)
 {
-	/*** Load ncnn model ***/
-	s_net = new ncnn::Net();
-	CHECK(s_net != NULL);
-	CHECK(s_net->load_param((std::string(modelFilename) + ".param").c_str()) == 0);
-	CHECK(s_net->load_model((std::string(modelFilename) + ".bin").c_str()) == 0);
+	if (s_classificationEngine) {
+		PRINT_E("Already initialized\n");
+		return -1;
+	}
 
-	/* read label */
-	readLabel(inputParam->labelFilename, s_labels);
+	s_classificationEngine.reset(new ClassificationEngine());
+	if (s_classificationEngine->initialize(inputParam->workDir, inputParam->numThreads) != ClassificationEngine::RET_OK) {
+		return -1;
+	}
+	return 0;
+}
+
+int32_t ImageProcessor_finalize(void)
+{
+	if (!s_classificationEngine) {
+		PRINT_E("Not initialized\n");
+		return -1;
+	}
+
+	if (s_classificationEngine->finalize() != ClassificationEngine::RET_OK) {
+		return -1;
+	}
 
 	return 0;
 }
 
 
-int ImageProcessor_process(cv::Mat *mat, OUTPUT_PARAM *outputParam)
+int32_t ImageProcessor_command(int32_t cmd)
 {
-	/*** PreProcess for ncnn ***/
-	ncnn::Mat ncnnMat = ncnn::Mat::from_pixels_resize(mat->data, MODEL_CHANNEL, mat->cols, mat->rows, MODEL_WIDTH, MODEL_HEIGHT);
-	float mean[3] = { 128.f, 128.f, 128.f };
-	float norm[3] = { 1 / 128.f, 1 / 128.f, 1 / 128.f };
-	ncnnMat.substract_mean_normalize(mean, norm);
-
-	/*** Inference ***/
-	ncnn::Extractor ex = s_net->create_extractor();
-	ex.set_light_mode(true);
-	ex.set_num_threads(NCNN_CPU_NUM);
-	CHECK(ex.input("data", ncnnMat) == 0);
-
-	/*** Run inference ***/
-	ncnn::Mat ncnnOut;
-	CHECK(ex.extract("mobilenetv20_output_flatten0_reshape0", ncnnOut) == 0);
-
-	/*** PostProcess ***/
-	/* Retrieve results */
-	std::vector<float> results;
-	int outputNum = ncnnOut.w;
-	results.resize(outputNum);
-	for (int i = 0; i < outputNum; i++) {
-		results[i] = ((float*)ncnnOut.data)[i];
+	if (!s_classificationEngine) {
+		PRINT_E("Not initialized\n");
+		return -1;
 	}
-	
-	/* Find the max score */
-	int maxIndex = (int)(std::max_element(results.begin(), results.end()) - results.begin());
-	float maxScore = *std::max_element(results.begin(), results.end());
-	PRINT("Result = %s (%d) (%.3f)\n", s_labels[maxIndex].c_str(), maxIndex, maxScore);
+
+	switch (cmd) {
+	case 0:
+	default:
+		PRINT_E("command(%d) is not supported\n", cmd);
+		return -1;
+	}
+}
+
+
+int32_t ImageProcessor_process(cv::Mat* mat, OUTPUT_PARAM* outputParam)
+{
+	if (!s_classificationEngine) {
+		PRINT_E("Not initialized\n");
+		return -1;
+	}
+
+	const cv::Mat originalMat = *mat;
+	ClassificationEngine::RESULT result = { 0 };
+	if (s_classificationEngine->invoke(originalMat, result) != ClassificationEngine::RET_OK) {
+		return -1;
+	}
 
 	/* Draw the result */
 	std::string resultStr;
-	resultStr = "Result:" + s_labels[maxIndex] + " (score = " + std::to_string(maxScore) + ")";
-	cv::putText(*mat, resultStr, cv::Point(100, 100), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0, 0, 0), 3);
-	cv::putText(*mat, resultStr, cv::Point(100, 100), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0, 255, 0), 1);
+	resultStr = "Result:" + result.labelName + " (score = " + std::to_string(result.score) + ")";
+	cv::putText(originalMat, resultStr, cv::Point(10, 10), cv::FONT_HERSHEY_PLAIN, 1, createCvColor(0, 0, 0), 3);
+	cv::putText(originalMat, resultStr, cv::Point(10, 10), cv::FONT_HERSHEY_PLAIN, 1, createCvColor(0, 255, 0), 1);
 
-	/* Contain the results */
-	outputParam->classId = maxIndex;
-	snprintf(outputParam->label, sizeof(outputParam->label), s_labels[maxIndex].c_str());
-	outputParam->score = maxScore;
-	
+	/* Return the results */
+	outputParam->classId = result.labelIndex;
+	snprintf(outputParam->label, sizeof(outputParam->label), "%s", result.labelName.c_str());
+	outputParam->score = result.score;
+	outputParam->timePreProcess = result.timePreProcess;
+	outputParam->timeInference = result.timeInference;
+	outputParam->timePostProcess = result.timePostProcess;
+
 	return 0;
 }
 
-
-int ImageProcessor_finalize(void)
-{
-	delete s_net;
-	return 0;
-}
