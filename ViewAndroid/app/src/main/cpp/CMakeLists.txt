@@ -69,7 +69,7 @@ target_include_directories(native-lib PUBLIC ${OpenCV_INCLUDE_DIRS})
 target_link_libraries(native-lib ${OpenCV_LIBS})
 
 ### For my module
-set(ImageProcessor_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../../../pj_ncnn_det_mobilenet_v3/ImageProcessor")
+set(ImageProcessor_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../../../pj_ncnn_det_nanodet/ImageProcessor")
 message(${ImageProcessor_DIR})
 add_subdirectory(${ImageProcessor_DIR} ImageProcessor)
 target_include_directories(native-lib PUBLIC ${ImageProcessor_DIR})
