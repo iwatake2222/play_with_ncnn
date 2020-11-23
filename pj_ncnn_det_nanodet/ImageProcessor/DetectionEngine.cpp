@@ -26,8 +26,8 @@
 
 /* Model parameters */
 //#define MODEL_NAME   "nanodet.onnx"
-#define MODEL_NAME   "nanodet"
-//#define MODEL_NAME   "nanodet_m"
+//#define MODEL_NAME   "nanodet"
+#define MODEL_NAME   "nanodet_m"
 #define LABEL_NAME   "coco_label.txt"
 #define NUM_CLASS 80
 #define REG_MAX 7
@@ -59,12 +59,12 @@ int32_t DetectionEngine::initialize(const std::string& workDir, const int32_t nu
 	inputTensorInfo.imageInfo.cropHeight = -1;
 	inputTensorInfo.imageInfo.isBGR = true;
 	inputTensorInfo.imageInfo.swapColor = false;
-	inputTensorInfo.normalize.mean[0] = 0.406f;   /* https://github.com/RangiLyu/nanodet/blob/main/demo_android_ncnn/app/src/main/cpp/NanoDet.cpp */
-	inputTensorInfo.normalize.mean[1] = 0.456f;
-	inputTensorInfo.normalize.mean[2] = 0.485f;
-	inputTensorInfo.normalize.norm[0] = 0.225f;
-	inputTensorInfo.normalize.norm[1] = 0.224f;
-	inputTensorInfo.normalize.norm[2] = 0.229f;
+	inputTensorInfo.normalize.mean[0] = 0.408f;   /* https://github.com/RangiLyu/nanodet/blob/main/demo_android_ncnn/app/src/main/cpp/NanoDet.cpp */
+	inputTensorInfo.normalize.mean[1] = 0.447f;
+	inputTensorInfo.normalize.mean[2] = 0.470f;
+	inputTensorInfo.normalize.norm[0] = 0.289f;
+	inputTensorInfo.normalize.norm[1] = 0.274f;
+	inputTensorInfo.normalize.norm[2] = 0.278f;
 #if 0
 	/* Convert to speeden up normalization:  ((src / 255) - mean) / norm  = src * 1 / (255 * norm) - (mean / norm) */
 	for (int32_t i = 0; i < 3; i++) {
@@ -162,7 +162,7 @@ int32_t DetectionEngine::invoke(const cv::Mat& originalMat, RESULT& result)
 	inputTensorInfo.imageInfo.cropWidth = imgSrc.cols;
 	inputTensorInfo.imageInfo.cropHeight = imgSrc.rows;
 	inputTensorInfo.imageInfo.isBGR = true;
-	inputTensorInfo.imageInfo.swapColor = true;
+	inputTensorInfo.imageInfo.swapColor = false;
 	if (m_inferenceHelper->preProcess(m_inputTensorList) != InferenceHelper::RET_OK) {
 		return RET_ERR;
 	}
@@ -179,13 +179,13 @@ int32_t DetectionEngine::invoke(const cv::Mat& originalMat, RESULT& result)
 	const auto& tPostProcess0 = std::chrono::steady_clock::now();
 	/* Retrieve result */
 	std::vector<OBJECT> objectList;
-	decodeInfer(objectList, m_outputTensorList[0], m_outputTensorList[1], 0.5, 8, inputTensorInfo.tensorDims.width, inputTensorInfo.tensorDims.height);
-	decodeInfer(objectList, m_outputTensorList[2], m_outputTensorList[3], 0.5, 16, inputTensorInfo.tensorDims.width, inputTensorInfo.tensorDims.height);
-	decodeInfer(objectList, m_outputTensorList[4], m_outputTensorList[5], 0.5, 32, inputTensorInfo.tensorDims.width, inputTensorInfo.tensorDims.height);
+	decodeInfer(objectList, m_outputTensorList[0], m_outputTensorList[1], 0.4, 8, inputTensorInfo.tensorDims.width, inputTensorInfo.tensorDims.height);
+	decodeInfer(objectList, m_outputTensorList[2], m_outputTensorList[3], 0.4, 16, inputTensorInfo.tensorDims.width, inputTensorInfo.tensorDims.height);
+	decodeInfer(objectList, m_outputTensorList[4], m_outputTensorList[5], 0.4, 32, inputTensorInfo.tensorDims.width, inputTensorInfo.tensorDims.height);
 
 	/* NMS */
 	std::vector<OBJECT> objectListNms;
-	nms(objectList, objectListNms, true);
+	nms(objectList, objectListNms, false);
 
 	/* Convert coordinate (model size to image size) */
 	for (auto& object : objectListNms) {
@@ -235,9 +235,10 @@ int32_t DetectionEngine::decodeInfer(std::vector<OBJECT>& objectList, const Outp
 		float_t scoreMax = 0;
 		int32_t classIdMax = 0;
 		for (int32_t label = 0; label < NUM_CLASS; label++) {
-			if (score[clsPred.tensorDims.width * label + idx] > scoreMax) {	/* memo: In ONNX model, H = label, W = pos(idx) */
-			//if (score[clsPred.tensorDims.width * idx + label] > scoreMax) {
-				scoreMax = score[clsPred.tensorDims.width * label + idx];
+			//float currentScore = score[clsPred.tensorDims.width * label + idx];	/* memo: In ONNX model, H = label, W = pos(idx) */
+			float currentScore = score[clsPred.tensorDims.width * idx + label];
+			if (currentScore > scoreMax) {
+				scoreMax = currentScore;
 				classIdMax = label;
 			}
 		}
@@ -301,8 +302,8 @@ void DetectionEngine::disPred2Bbox(OBJECT& object, const OutputTensorInfo& disPr
 	for (int32_t i = 0; i < 4; i++) {
 		float_t dis = 0;
 		float_t dis_after_sm[REG_MAX + 1];
-		activation_function_softmax(static_cast<float_t*>(disPred.data) + disPred.tensorDims.width * (i * (REG_MAX + 1)) + idx, dis_after_sm, REG_MAX + 1);		/* memo: In ONNX model, H = label, W = pos(idx) */
-		//activation_function_softmax(static_cast<float_t*>(disPred.data) + disPred.tensorDims.width * idx + (i * (REG_MAX + 1)), dis_after_sm, REG_MAX + 1);
+		//activation_function_softmax(static_cast<float_t*>(disPred.data) + disPred.tensorDims.width * (i * (REG_MAX + 1)) + idx, dis_after_sm, REG_MAX + 1);		/* memo: In ONNX model, H = label, W = pos(idx) */
+		activation_function_softmax(static_cast<float_t*>(disPred.data) + disPred.tensorDims.width * idx + (i * (REG_MAX + 1)), dis_after_sm, REG_MAX + 1);
 		for (int32_t j = 0; j < REG_MAX + 1; j++) {
 			dis += j * dis_after_sm[j];
 		}
