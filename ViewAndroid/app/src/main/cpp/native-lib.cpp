@@ -18,7 +18,7 @@ Java_com_iwatake_viewandroidncnn_MainActivity_ImageProcessorInitialize(
     int ret = 0;
     INPUT_PARAM inputParam;
     snprintf(inputParam.workDir, sizeof(inputParam.workDir), WORK_DIR);
-    inputParam.numThreads = 4;
+    inputParam.numThreads = 2;
     ret = ImageProcessor_initialize(&inputParam);
     return ret;
 }
