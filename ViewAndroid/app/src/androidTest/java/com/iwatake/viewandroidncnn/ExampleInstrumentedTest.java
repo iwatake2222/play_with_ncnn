@@ -1,4 +1,4 @@
-package com.iwatake.viewandroid;
+package com.iwatake.viewandroidncnn;
 
 import android.content.Context;
 
