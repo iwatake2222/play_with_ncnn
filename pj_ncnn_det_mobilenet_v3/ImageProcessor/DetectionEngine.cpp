@@ -154,9 +154,9 @@ int32_t DetectionEngine::invoke(const cv::Mat& originalMat, RESULT& result)
 
 	/* Return the results */
 	result.objectList = objectList;
-	result.timePreProcess = static_cast<std::chrono::duration<double_t>>(tPreProcess1 - tPreProcess0).count() * 1000.0;
-	result.timeInference = static_cast<std::chrono::duration<double_t>>(tInference1 - tInference0).count() * 1000.0;
-	result.timePostProcess = static_cast<std::chrono::duration<double_t>>(tPostProcess1 - tPostProcess0).count() * 1000.0;;
+	result.timePreProcess = static_cast<std::chrono::duration<double>>(tPreProcess1 - tPreProcess0).count() * 1000.0;
+	result.timeInference = static_cast<std::chrono::duration<double>>(tInference1 - tInference0).count() * 1000.0;
+	result.timePostProcess = static_cast<std::chrono::duration<double>>(tPostProcess1 - tPostProcess0).count() * 1000.0;;
 
 	return RET_OK;
 }
@@ -178,20 +178,20 @@ int32_t DetectionEngine::readLabel(const std::string& filename, std::vector<std:
 }
 
 
-int32_t DetectionEngine::getObject(const OutputTensorInfo& rawOutput, std::vector<OBJECT>& objectList, double_t threshold, int32_t width, int32_t height)
+int32_t DetectionEngine::getObject(const OutputTensorInfo& rawOutput, std::vector<OBJECT>& objectList, double threshold, int32_t width, int32_t height)
 {
-	const float_t* p = static_cast<const float_t*>(rawOutput.data);
+	const float* p = static_cast<const float*>(rawOutput.data);
 	for (int32_t i = 0; i < rawOutput.tensorDims.height; i++) {
-		const float_t* values = p + (rawOutput.tensorDims.width * i);
+		const float* values = p + (rawOutput.tensorDims.width * i);
 		OBJECT object;
 		object.classId = (int32_t)values[0];
 		object.label = m_labelList[object.classId];
 		object.score = values[1];
 		if (object.score < threshold) continue;
-		object.x = std::max<float_t>(values[2], 0.0f);
-		object.y = std::max<float_t>(values[3], 0.0f);
-		object.width = std::min<float_t>(values[4], 1.0f) - values[2];
-		object.height = std::min<float_t>(values[5], 1.0f) - values[3];
+		object.x = std::max<float>(values[2], 0.0f);
+		object.y = std::max<float>(values[3], 0.0f);
+		object.width = std::min<float>(values[4], 1.0f) - values[2];
+		object.height = std::min<float>(values[5], 1.0f) - values[3];
 		if (width > 0) {
 			object.x *= width;
 			object.y *= width;
