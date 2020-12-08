@@ -26,18 +26,18 @@ public:
 	typedef struct {
 		int32_t     classId;
 		std::string label;
-		float_t  score;
-		float_t  x;
-		float_t  y;
-		float_t  width;
-		float_t  height;
+		float  score;
+		float  x;
+		float  y;
+		float  width;
+		float  height;
 	} OBJECT;
 
 	typedef struct RESULT_ {
 		std::vector<OBJECT> objectList;
-		double_t            timePreProcess;		// [msec]
-		double_t            timeInference;		// [msec]
-		double_t            timePostProcess;	// [msec]
+		double            timePreProcess;		// [msec]
+		double            timeInference;		// [msec]
+		double            timePostProcess;	// [msec]
 		RESULT_() : timePreProcess(0), timeInference(0), timePostProcess(0)
 		{}
 	} RESULT;
@@ -51,7 +51,7 @@ public:
 
 private:
 	int32_t readLabel(const std::string& filename, std::vector<std::string>& labelList);
-	int32_t decodeInfer(std::vector<OBJECT>& objectList, const OutputTensorInfo& clsPred, const OutputTensorInfo& disPred, double_t threshold, int32_t stride, int32_t modelWidth, int32_t modelHeight);
+	int32_t decodeInfer(std::vector<OBJECT>& objectList, const OutputTensorInfo& clsPred, const OutputTensorInfo& disPred, double threshold, int32_t stride, int32_t modelWidth, int32_t modelHeight);
 	void disPred2Bbox(OBJECT& object, const OutputTensorInfo& disPred, int32_t idx, int32_t x, int32_t y, int32_t stride);
 	void nms(std::vector<OBJECT>& objectList, std::vector<OBJECT>& objectListNMS, bool useWeight);
 	float calculateIoU(const OBJECT& det0, const OBJECT& det1);

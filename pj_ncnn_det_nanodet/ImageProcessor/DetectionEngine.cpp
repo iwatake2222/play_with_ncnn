@@ -181,9 +181,9 @@ int32_t DetectionEngine::invoke(const cv::Mat& originalMat, RESULT& result)
 
 	/* Return the results */
 	result.objectList = objectListNms;
-	result.timePreProcess = static_cast<std::chrono::duration<double_t>>(tPreProcess1 - tPreProcess0).count() * 1000.0;
-	result.timeInference = static_cast<std::chrono::duration<double_t>>(tInference1 - tInference0).count() * 1000.0;
-	result.timePostProcess = static_cast<std::chrono::duration<double_t>>(tPostProcess1 - tPostProcess0).count() * 1000.0;;
+	result.timePreProcess = static_cast<std::chrono::duration<double>>(tPreProcess1 - tPreProcess0).count() * 1000.0;
+	result.timeInference = static_cast<std::chrono::duration<double>>(tInference1 - tInference0).count() * 1000.0;
+	result.timePostProcess = static_cast<std::chrono::duration<double>>(tPostProcess1 - tPostProcess0).count() * 1000.0;;
 
 	return RET_OK;
 }
@@ -205,17 +205,17 @@ int32_t DetectionEngine::readLabel(const std::string& filename, std::vector<std:
 }
 
 /* Original code: https://github.com/RangiLyu/nanodet/blob/main/demo_ncnn/nanodet.cpp */
-int32_t DetectionEngine::decodeInfer(std::vector<OBJECT>& objectList, const OutputTensorInfo& clsPred, const OutputTensorInfo& disPred, double_t threshold, int32_t stride, int32_t modelWidth, int32_t modelHeight)
+int32_t DetectionEngine::decodeInfer(std::vector<OBJECT>& objectList, const OutputTensorInfo& clsPred, const OutputTensorInfo& disPred, double threshold, int32_t stride, int32_t modelWidth, int32_t modelHeight)
 {
 	int32_t feature_w = modelWidth / stride;
 	int32_t feature_h = modelHeight / stride;
 
 	for (int32_t idx = 0; idx < feature_h * feature_w; idx++) {
 		
-		const float_t* score = static_cast<const float_t*>(clsPred.data);
+		const float* score = static_cast<const float*>(clsPred.data);
 		int32_t row = idx / feature_h;
 		int32_t col = idx % feature_w;
-		float_t scoreMax = 0;
+		float scoreMax = 0;
 		int32_t classIdMax = 0;
 		for (int32_t label = 0; label < NUM_CLASS; label++) {
 			//float currentScore = score[clsPred.tensorDims.width * label + idx];	/* memo: In ONNX model, H = label, W = pos(idx) */
@@ -241,17 +241,17 @@ int32_t DetectionEngine::decodeInfer(std::vector<OBJECT>& objectList, const Outp
 	return RET_OK;
 }
 
-inline float_t fast_exp(float_t x)
+inline float fast_exp(float x)
 {
 	union {
 		uint32_t i;
-		float_t f;
+		float f;
 	} v{};
 	v.i = static_cast<int32_t>((1 << 23) * (1.4426950409 * x + 126.93490512f));
 	return v.f;
 }
 
-inline float_t sigmoid(float_t x)
+inline float sigmoid(float x)
 {
 	return 1.0f / (1.0f + fast_exp(-x));
 }
@@ -276,17 +276,17 @@ int32_t activation_function_softmax(const _Tp* src, _Tp* dst, int32_t length)
 
 void DetectionEngine::disPred2Bbox(OBJECT& object, const OutputTensorInfo& disPred, int32_t idx, int32_t x, int32_t y, int32_t stride)
 {
-	float_t ct_x = (x + 0.5f) * stride;
-	float_t ct_y = (y + 0.5f) * stride;
-	std::vector<float_t> dis_pred;
+	float ct_x = (x + 0.5f) * stride;
+	float ct_y = (y + 0.5f) * stride;
+	std::vector<float> dis_pred;
 	dis_pred.resize(4);
 
 
 	for (int32_t i = 0; i < 4; i++) {
-		float_t dis = 0;
-		float_t dis_after_sm[REG_MAX + 1];
-		//activation_function_softmax(static_cast<float_t*>(disPred.data) + disPred.tensorDims.width * (i * (REG_MAX + 1)) + idx, dis_after_sm, REG_MAX + 1);		/* memo: In ONNX model, H = label, W = pos(idx) */
-		activation_function_softmax(static_cast<float_t*>(disPred.data) + disPred.tensorDims.width * idx + (i * (REG_MAX + 1)), dis_after_sm, REG_MAX + 1);
+		float dis = 0;
+		float dis_after_sm[REG_MAX + 1];
+		//activation_function_softmax(static_cast<float*>(disPred.data) + disPred.tensorDims.width * (i * (REG_MAX + 1)) + idx, dis_after_sm, REG_MAX + 1);		/* memo: In ONNX model, H = label, W = pos(idx) */
+		activation_function_softmax(static_cast<float*>(disPred.data) + disPred.tensorDims.width * idx + (i * (REG_MAX + 1)), dis_after_sm, REG_MAX + 1);
 		for (int32_t j = 0; j < REG_MAX + 1; j++) {
 			dis += j * dis_after_sm[j];
 		}
@@ -302,17 +302,17 @@ void DetectionEngine::disPred2Bbox(OBJECT& object, const OutputTensorInfo& disPr
 	return;
 }
 
-float_t DetectionEngine::calculateIoU(const OBJECT& det0, const OBJECT& det1)
+float DetectionEngine::calculateIoU(const OBJECT& det0, const OBJECT& det1)
 {
-	float_t interx0 = std::max(det0.x, det1.x);
-	float_t intery0 = std::max(det0.y, det1.y);
-	float_t interx1 = std::min(det0.x + det0.width, det1.x + det1.width);
-	float_t intery1 = std::min(det0.y + det0.height, det1.y + det1.height);
+	float interx0 = std::max(det0.x, det1.x);
+	float intery0 = std::max(det0.y, det1.y);
+	float interx1 = std::min(det0.x + det0.width, det1.x + det1.width);
+	float intery1 = std::min(det0.y + det0.height, det1.y + det1.height);
 
-	float_t area0 = det0.width * det0.height;
-	float_t area1 = det1.width * det1.height;
-	float_t areaInter = (interx1 - interx0) * (intery1 - intery0);
-	float_t areaSum = area0 + area1 - areaInter;
+	float area0 = det0.width * det0.height;
+	float area1 = det1.width * det1.height;
+	float areaInter = (interx1 - interx0) * (intery1 - intery0);
+	float areaSum = area0 + area1 - areaInter;
 
 	return areaInter / areaSum;
 }
@@ -349,7 +349,7 @@ void DetectionEngine::nms(std::vector<OBJECT> &objectList, std::vector<OBJECT> &
 			mergedBox.y = 0;
 			mergedBox.width = 0;
 			mergedBox.height = 0;
-			float_t sumScore = 0;
+			float sumScore = 0;
 			for (auto candidate : candidates) {
 				sumScore += candidate.score;
 				mergedBox.score += candidate.score;
