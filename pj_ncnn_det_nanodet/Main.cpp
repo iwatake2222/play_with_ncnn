@@ -17,7 +17,7 @@
 #include "ImageProcessor.h"
 
 /*** Macro ***/
-#define IMAGE_NAME   RESOURCE_DIR"/cat.jpg"
+#define IMAGE_NAME   RESOURCE_DIR"/cat_laptop.jpg"
 #define WORK_DIR     RESOURCE_DIR
 #define LOOP_NUM_FOR_TIME_MEASUREMENT 10
 
