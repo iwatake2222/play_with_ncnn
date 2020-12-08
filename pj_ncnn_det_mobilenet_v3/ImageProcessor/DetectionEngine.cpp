@@ -25,7 +25,7 @@
 #define PRINT_E(...) COMMON_HELPER_PRINT_E(TAG, __VA_ARGS__)
 
 /* Model parameters */
-#define MODEL_NAME   "mobilenetv3_ssdlite_voc"
+#define MODEL_NAME   "mobilenetv3_ssdlite_voc.param"
 #define LABEL_NAME   "label_PASCAL_VOC2012.txt"
 
 
@@ -45,39 +45,13 @@ int32_t DetectionEngine::initialize(const std::string& workDir, const int32_t nu
 	inputTensorInfo.tensorDims.width = 300;
 	inputTensorInfo.tensorDims.height = 300;
 	inputTensorInfo.tensorDims.channel = 3;
-	inputTensorInfo.data = nullptr;
 	inputTensorInfo.dataType = InputTensorInfo::DATA_TYPE_IMAGE;
-	inputTensorInfo.imageInfo.width = -1;
-	inputTensorInfo.imageInfo.height = -1;
-	inputTensorInfo.imageInfo.channel = -1;
-	inputTensorInfo.imageInfo.cropX = -1;
-	inputTensorInfo.imageInfo.cropY = -1;
-	inputTensorInfo.imageInfo.cropWidth = -1;
-	inputTensorInfo.imageInfo.cropHeight = -1;
-	inputTensorInfo.imageInfo.isBGR = true;
-	inputTensorInfo.imageInfo.swapColor = false;
 	inputTensorInfo.normalize.mean[0] = 0.485f;   /* https://github.com/Tencent/ncnn/blob/master/examples/mobilenetv3ssdlite.cpp */
 	inputTensorInfo.normalize.mean[1] = 0.456f;
 	inputTensorInfo.normalize.mean[2] = 0.406f;
 	inputTensorInfo.normalize.norm[0] = 1 / 255.0f;
 	inputTensorInfo.normalize.norm[1] = 1 / 255.0f;
 	inputTensorInfo.normalize.norm[2] = 1 / 255.0f;
-#if 0
-	/* Convert to speeden up normalization:  ((src / 255) - mean) / norm  = src * 1 / (255 * norm) - (mean / norm) */
-	for (int32_t i = 0; i < 3; i++) {
-		inputTensorInfo.normalize.mean[i] /= inputTensorInfo.normalize.norm[i];
-		inputTensorInfo.normalize.norm[i] *= 255.0f;
-		inputTensorInfo.normalize.norm[i] = 1.0f / inputTensorInfo.normalize.norm[i];
-	}
-#endif
-#if 1
-	/* Convert to speeden up normalization:  ((src / 255) - mean) / norm = (src  - (mean * 255))  * (1 / (255 * norm)) */
-	for (int32_t i = 0; i < 3; i++) {
-		inputTensorInfo.normalize.mean[i] *= 255.0f;
-		inputTensorInfo.normalize.norm[i] *= 255.0f;
-		inputTensorInfo.normalize.norm[i] = 1.0f / inputTensorInfo.normalize.norm[i];
-	}
-#endif
 	m_inputTensorList.push_back(inputTensorInfo);
 
 	/* Set output tensor info */
@@ -102,6 +76,15 @@ int32_t DetectionEngine::initialize(const std::string& workDir, const int32_t nu
 	if (m_inferenceHelper->initialize(modelFilename, m_inputTensorList, m_outputTensorList) != InferenceHelper::RET_OK) {
 		m_inferenceHelper.reset();
 		return RET_ERR;
+	}
+
+	/* Check if input tensor info is set */
+	for (const auto& inputTensorInfo : m_inputTensorList) {
+		if ((inputTensorInfo.tensorDims.width <= 0) || (inputTensorInfo.tensorDims.height <= 0) || inputTensorInfo.tensorType == TensorInfo::TENSOR_TYPE_NONE) {
+			PRINT_E("Invalid tensor size\n");
+			m_inferenceHelper.reset();
+			return RET_ERR;
+		}
 	}
 
 	/* read label */
@@ -136,9 +119,9 @@ int32_t DetectionEngine::invoke(const cv::Mat& originalMat, RESULT& result)
 	/* do resize and color conversion here because some inference engine doesn't support these operations */
 	cv::Mat imgSrc;
 	cv::resize(originalMat, imgSrc, cv::Size(inputTensorInfo.tensorDims.width, inputTensorInfo.tensorDims.height));
-	if (inputTensorInfo.imageInfo.channel == 3 && inputTensorInfo.imageInfo.swapColor) {
-		cv::cvtColor(imgSrc, imgSrc, cv::COLOR_BGR2RGB);
-	}
+#ifndef CV_COLOR_IS_RGB
+	cv::cvtColor(imgSrc, imgSrc, cv::COLOR_BGR2RGB);
+#endif
 	inputTensorInfo.data = imgSrc.data;
 	inputTensorInfo.dataType = InputTensorInfo::DATA_TYPE_IMAGE;
 	inputTensorInfo.imageInfo.width = imgSrc.cols;
@@ -148,8 +131,8 @@ int32_t DetectionEngine::invoke(const cv::Mat& originalMat, RESULT& result)
 	inputTensorInfo.imageInfo.cropY = 0;
 	inputTensorInfo.imageInfo.cropWidth = imgSrc.cols;
 	inputTensorInfo.imageInfo.cropHeight = imgSrc.rows;
-	inputTensorInfo.imageInfo.isBGR = true;
-	inputTensorInfo.imageInfo.swapColor = true;
+	inputTensorInfo.imageInfo.isBGR = false;
+	inputTensorInfo.imageInfo.swapColor = false;
 	if (m_inferenceHelper->preProcess(m_inputTensorList) != InferenceHelper::RET_OK) {
 		return RET_ERR;
 	}
