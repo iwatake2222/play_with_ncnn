@@ -26,18 +26,20 @@ public:
 	typedef struct {
 		int32_t     classId;
 		std::string label;
-		float_t  score;
-		float_t  x;
-		float_t  y;
-		float_t  width;
-		float_t  height;
+		float  score;
+		float  x;
+		float  y;
+		float  width;
+		float  height;
 	} OBJECT;
 
-	typedef struct {
+	typedef struct RESULT_ {
 		std::vector<OBJECT> objectList;
-		double_t            timePreProcess;		// [msec]
-		double_t            timeInference;		// [msec]
-		double_t            timePostProcess;	// [msec]
+		double            timePreProcess;		// [msec]
+		double            timeInference;		// [msec]
+		double            timePostProcess;	// [msec]
+		RESULT_() : timePreProcess(0), timeInference(0), timePostProcess(0)
+		{}
 	} RESULT;
 
 public:
@@ -49,7 +51,7 @@ public:
 
 private:
 	int32_t readLabel(const std::string& filename, std::vector<std::string>& labelList);
-	int32_t getObject(const OutputTensorInfo& rawOutput, std::vector<OBJECT>& objectList, double_t threshold, int32_t width = -1, int32_t height = -1);
+	int32_t getObject(const OutputTensorInfo& rawOutput, std::vector<OBJECT>& objectList, double threshold, int32_t width = -1, int32_t height = -1);
 
 private:
 	std::unique_ptr<InferenceHelper> m_inferenceHelper;
