@@ -1,0 +1,2 @@
+URL: https://github.com/Tencent/ncnn/
+Commit ID: 560c923b827556f37a3446c3379e33c12011c314
