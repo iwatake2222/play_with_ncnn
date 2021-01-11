@@ -1,34 +1,55 @@
 # Play with ncnn
 Sample projects to use ncnn (https://github.com/Tencent/ncnn )
 
-## Target environment
- - Windows(MSVC2017) (x64)
- - Linux (x64)
- - Linux (armv7) e.g. Raspberry Pi 3,4
- - Linux (aarch64) e.g. Jetson Nano
- - *Native build only (Cross build is not supported)
-
+## Target Environment
+- Platform
+	- Linux (x64)
+		- Tested in Xubuntu 18 in VirtualBox in Windows 10
+	- Linux (armv7)
+		- Tested in Raspberry Pi4 (Raspbian 32-bit)
+	- Linux (aarch64)
+		- Tested in Jetson Nano (JetPack 4.3) and Jetson NX (JetPack 4.4)
+	- Android (aarch64)
+		- Tested in Pixel 4a
+	- Windows (x64). Visual Studio 2017, 2019
+		- Tested in Windows10 64-bit
 
 ## How to build application code
-### Preparation
-- Please download the following files from [Releases](https://github.com/iwatake2222/play_with_ncnn/releases ) in GitHub, and extract them to the same name directory
-	- third_party.zip
-	- resource.zip
+### Requirements
+- OpenCV 4.x
+
+### Common 
+- Get source code
+	```sh
+	git clone https://github.com/iwatake2222/play_with_ncnn.git
+	cd play_with_ncnn
+	git submodule update --init
+	```
+
+- Download prebuilt libraries
+	- Download prebuilt libraries (ThirdParty.zip) from https://github.com/iwatake2222/InferenceHelper/releases/ 
+	- Extract it to `InferenceHelper/ThirdParty/`
+- Download models
+	- Download models (resource.zip) from https://github.com/iwatake2222/play_with_ncnn/releases
+	- Extract it to `resource/`
 
 ### Linux
 ```
 cd pj_ncnn_cls_mobilenet_v2   # for example
 mkdir build && cd build
 cmake ..
-# cmake -DSPEED_TEST_ONLY=off ..	# for camera input
 make
-
 ./main
+```
+
+### Option (Camera input)
+```sh
+cmake .. -DSPEED_TEST_ONLY=off
 ```
 
 ### Windows (Visual Studio)
 - Configure and Generate a new project using cmake-gui for Visual Studio 2017 64-bit
-	- `Where is the source code` : path-to-play_with_ncnn/project_cls_mobilenet_v2	(for example)
+	- `Where is the source code` : path-to-play_with_tflite/pj_tflite_cls_mobilenet_v2	(for example)
 	- `Where to build the binaries` : path-to-build	(any)
 - Open `main.sln`
 - Set `main` project as a startup project, then build and run!
@@ -50,7 +71,7 @@ You will need the following settings at first.
 	- In case you cannot import OpenCV module, remove `sdk` module and dependency of `app` to `sdk` in Project Structure
 
 ### How to create pre-built ncnn library
-pre-built ncnn library is stored in third_party/ncnn_prebuilt (please download from [Releases](https://github.com/iwatake2222/play_with_ncnn/releases )). 
+pre-built ncnn library is stored in InferenceHelper/ThirdParty/ncnn_prebuilt .
 Please follow the instruction (https://github.com/Tencent/ncnn/wiki/how-to-build ), if you want to build them by yourself.
 
 # License
