@@ -29,7 +29,7 @@ int32_t main()
     ImageProcessor::InputParam input_param = { WORK_DIR, 4 };
     ImageProcessor::Initialize(&input_param);
 
-#ifndef SPEED_TEST_ONLY
+#ifdef SPEED_TEST_ONLY
     /* Read an input image */
     cv::Mat original_image = cv::imread(IMAGE_NAME);
 
