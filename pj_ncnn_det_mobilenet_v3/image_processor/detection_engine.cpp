@@ -15,9 +15,9 @@
 #include <opencv2/opencv.hpp>
 
 /* for My modules */
-#include "CommonHelper.h"
-#include "InferenceHelper.h"
-#include "DetectionEngine.h"
+#include "common_helper.h"
+#include "inference_helper.h"
+#include "detection_engine.h"
 
 /*** Macro ***/
 #define TAG "DetectionEngine"
@@ -27,165 +27,152 @@
 /* Model parameters */
 #define MODEL_NAME   "mobilenetv3_ssdlite_voc.param"
 #define LABEL_NAME   "label_PASCAL_VOC2012.txt"
+#define INPUT_NAME   "input"
+#define OUTPUT_NAME  "detection_out"
+#define TENSORTYPE    TensorInfo::kTensorTypeFp32
+#define IS_NCHW       true
+#define INPUT_DIMS    { 1, 3, 300, 300 }
 
 
 /*** Function ***/
-int32_t DetectionEngine::initialize(const std::string& workDir, const int32_t numThreads)
+int32_t DetectionEngine::Initialize(const std::string& work_dir, const int32_t num_threads)
 {
 	/* Set model information */
-	std::string modelFilename = workDir + "/model/" + MODEL_NAME;
-	std::string labelFilename = workDir + "/model/" + LABEL_NAME;
+	std::string model_filename = work_dir + "/model/" + MODEL_NAME;
+	std::string label_filename = work_dir + "/model/" + LABEL_NAME;
 
 	/* Set input tensor info */
-	m_inputTensorList.clear();
-	InputTensorInfo inputTensorInfo;
-	inputTensorInfo.name = "input";
-	inputTensorInfo.tensorType = TensorInfo::TENSOR_TYPE_FP32;
-	inputTensorInfo.tensorDims.batch = 1;
-	inputTensorInfo.tensorDims.width = 300;
-	inputTensorInfo.tensorDims.height = 300;
-	inputTensorInfo.tensorDims.channel = 3;
-	inputTensorInfo.dataType = InputTensorInfo::DATA_TYPE_IMAGE;
-	inputTensorInfo.normalize.mean[0] = 0.485f;   /* https://github.com/Tencent/ncnn/blob/master/examples/mobilenetv3ssdlite.cpp */
-	inputTensorInfo.normalize.mean[1] = 0.456f;
-	inputTensorInfo.normalize.mean[2] = 0.406f;
-	inputTensorInfo.normalize.norm[0] = 1 / 255.0f;
-	inputTensorInfo.normalize.norm[1] = 1 / 255.0f;
-	inputTensorInfo.normalize.norm[2] = 1 / 255.0f;
-	m_inputTensorList.push_back(inputTensorInfo);
+	input_tensor_info_list_.clear();
+	InputTensorInfo input_tensor_info(INPUT_NAME, TENSORTYPE, IS_NCHW);
+	input_tensor_info.tensor_dims = INPUT_DIMS;
+	input_tensor_info.data_type = InputTensorInfo::kDataTypeImage;
+	input_tensor_info.normalize.mean[0] = 0.485f;   /* https://github.com/Tencent/ncnn/blob/master/examples/mobilenetv3ssdlite.cpp */
+	input_tensor_info.normalize.mean[1] = 0.456f;
+	input_tensor_info.normalize.mean[2] = 0.406f;
+	input_tensor_info.normalize.norm[0] = 1 / 255.0f;
+	input_tensor_info.normalize.norm[1] = 1 / 255.0f;
+	input_tensor_info.normalize.norm[2] = 1 / 255.0f;
+	input_tensor_info_list_.push_back(input_tensor_info);
 
 	/* Set output tensor info */
-	m_outputTensorList.clear();
-	OutputTensorInfo outputTensorInfo;
-	outputTensorInfo.name = "detection_out";
-	outputTensorInfo.tensorType = TensorInfo::TENSOR_TYPE_FP32;
-	m_outputTensorList.push_back(outputTensorInfo);
+	output_tensor_info_list_.clear();
+	output_tensor_info_list_.push_back(OutputTensorInfo(OUTPUT_NAME, TENSORTYPE));
 
 	/* Create and Initialize Inference Helper */
-	//m_inferenceHelper.reset(InferenceHelper::create(InferenceHelper::OPEN_CV));
-	//m_inferenceHelper.reset(InferenceHelper::create(InferenceHelper::TENSOR_RT));
-	m_inferenceHelper.reset(InferenceHelper::create(InferenceHelper::NCNN));
+	//inference_helper_.reset(InferenceHelper::Create(InferenceHelper::OPEN_CV));
+	//inference_helper_.reset(InferenceHelper::Create(InferenceHelper::kTensorrt));
+	inference_helper_.reset(InferenceHelper::Create(InferenceHelper::kNcnn));
 
-	if (!m_inferenceHelper) {
-		return RET_ERR;
+	if (!inference_helper_) {
+		return kRetErr;
 	}
-	if (m_inferenceHelper->setNumThread(numThreads) != InferenceHelper::RET_OK) {
-		m_inferenceHelper.reset();
-		return RET_ERR;
+	if (inference_helper_->SetNumThreads(num_threads) != InferenceHelper::kRetOk) {
+		inference_helper_.reset();
+		return kRetErr;
 	}
-	if (m_inferenceHelper->initialize(modelFilename, m_inputTensorList, m_outputTensorList) != InferenceHelper::RET_OK) {
-		m_inferenceHelper.reset();
-		return RET_ERR;
-	}
-
-	/* Check if input tensor info is set */
-	for (const auto& inputTensorInfo : m_inputTensorList) {
-		if ((inputTensorInfo.tensorDims.width <= 0) || (inputTensorInfo.tensorDims.height <= 0) || inputTensorInfo.tensorType == TensorInfo::TENSOR_TYPE_NONE) {
-			PRINT_E("Invalid tensor size\n");
-			m_inferenceHelper.reset();
-			return RET_ERR;
-		}
+	if (inference_helper_->Initialize(model_filename, input_tensor_info_list_, output_tensor_info_list_) != InferenceHelper::kRetOk) {
+		inference_helper_.reset();
+		return kRetErr;
 	}
 
 	/* read label */
-	if (readLabel(labelFilename, m_labelList) != RET_OK) {
-		return RET_ERR;
+	if (ReadLabel(label_filename, label_list_) != kRetOk) {
+		return kRetErr;
 	}
 
-
-	return RET_OK;
+	return kRetOk;
 }
 
-int32_t DetectionEngine::finalize()
+int32_t DetectionEngine::Finalize()
 {
-	if (!m_inferenceHelper) {
+	if (!inference_helper_) {
 		PRINT_E("Inference helper is not created\n");
-		return RET_ERR;
+		return kRetErr;
 	}
-	m_inferenceHelper->finalize();
-	return RET_OK;
+	inference_helper_->Finalize();
+	return kRetOk;
 }
 
 
-int32_t DetectionEngine::invoke(const cv::Mat& originalMat, RESULT& result)
+int32_t DetectionEngine::Process(const cv::Mat& original_mat, Result& result)
 {
-	if (!m_inferenceHelper) {
+	if (!inference_helper_) {
 		PRINT_E("Inference helper is not created\n");
-		return RET_ERR;
+		return kRetErr;
 	}
 	/*** PreProcess ***/
-	const auto& tPreProcess0 = std::chrono::steady_clock::now();
-	InputTensorInfo& inputTensorInfo = m_inputTensorList[0];
+	const auto& t_pre_process0 = std::chrono::steady_clock::now();
+	InputTensorInfo& input_tensor_info = input_tensor_info_list_[0];
 	/* do resize and color conversion here because some inference engine doesn't support these operations */
-	cv::Mat imgSrc;
-	cv::resize(originalMat, imgSrc, cv::Size(inputTensorInfo.tensorDims.width, inputTensorInfo.tensorDims.height));
+	cv::Mat img_src;
+	cv::resize(original_mat, img_src, cv::Size(input_tensor_info.GetWidth(), input_tensor_info.GetHeight()));
 #ifndef CV_COLOR_IS_RGB
-	cv::cvtColor(imgSrc, imgSrc, cv::COLOR_BGR2RGB);
+	cv::cvtColor(img_src, img_src, cv::COLOR_BGR2RGB);
 #endif
-	inputTensorInfo.data = imgSrc.data;
-	inputTensorInfo.dataType = InputTensorInfo::DATA_TYPE_IMAGE;
-	inputTensorInfo.imageInfo.width = imgSrc.cols;
-	inputTensorInfo.imageInfo.height = imgSrc.rows;
-	inputTensorInfo.imageInfo.channel = imgSrc.channels();
-	inputTensorInfo.imageInfo.cropX = 0;
-	inputTensorInfo.imageInfo.cropY = 0;
-	inputTensorInfo.imageInfo.cropWidth = imgSrc.cols;
-	inputTensorInfo.imageInfo.cropHeight = imgSrc.rows;
-	inputTensorInfo.imageInfo.isBGR = false;
-	inputTensorInfo.imageInfo.swapColor = false;
-	if (m_inferenceHelper->preProcess(m_inputTensorList) != InferenceHelper::RET_OK) {
-		return RET_ERR;
+	input_tensor_info.data = img_src.data;
+	input_tensor_info.data_type = InputTensorInfo::kDataTypeImage;
+	input_tensor_info.image_info.width = img_src.cols;
+	input_tensor_info.image_info.height = img_src.rows;
+	input_tensor_info.image_info.channel = img_src.channels();
+	input_tensor_info.image_info.crop_x = 0;
+	input_tensor_info.image_info.crop_y = 0;
+	input_tensor_info.image_info.crop_width = img_src.cols;
+	input_tensor_info.image_info.crop_height = img_src.rows;
+	input_tensor_info.image_info.is_bgr = false;
+	input_tensor_info.image_info.swap_color = false;
+	if (inference_helper_->PreProcess(input_tensor_info_list_) != InferenceHelper::kRetOk) {
+		return kRetErr;
 	}
-	const auto& tPreProcess1 = std::chrono::steady_clock::now();
+	const auto& t_pre_process1 = std::chrono::steady_clock::now();
 
 	/*** Inference ***/
-	const auto& tInference0 = std::chrono::steady_clock::now();
-	if (m_inferenceHelper->invoke(m_outputTensorList) != InferenceHelper::RET_OK) {
-		return RET_ERR;
+	const auto& t_inference0 = std::chrono::steady_clock::now();
+	if (inference_helper_->Process(output_tensor_info_list_) != InferenceHelper::kRetOk) {
+		return kRetErr;
 	}
-	const auto& tInference1 = std::chrono::steady_clock::now();
+	const auto& t_inference1 = std::chrono::steady_clock::now();
 
 	/*** PostProcess ***/
-	const auto& tPostProcess0 = std::chrono::steady_clock::now();
+	const auto& t_post_process0 = std::chrono::steady_clock::now();
 	/* Retrieve result */
-	std::vector<OBJECT> objectList;
-	getObject(m_outputTensorList[0], objectList, 0.2, originalMat.cols, originalMat.rows);
-	const auto& tPostProcess1 = std::chrono::steady_clock::now();
+	std::vector<Object> object_list;
+	GetObject(output_tensor_info_list_[0], object_list, 0.2, original_mat.cols, original_mat.rows);
+	const auto& t_post_process1 = std::chrono::steady_clock::now();
 
 	/* Return the results */
-	result.objectList = objectList;
-	result.timePreProcess = static_cast<std::chrono::duration<double>>(tPreProcess1 - tPreProcess0).count() * 1000.0;
-	result.timeInference = static_cast<std::chrono::duration<double>>(tInference1 - tInference0).count() * 1000.0;
-	result.timePostProcess = static_cast<std::chrono::duration<double>>(tPostProcess1 - tPostProcess0).count() * 1000.0;;
+	result.object_list = object_list;
+	result.time_pre_process = static_cast<std::chrono::duration<double>>(t_pre_process1 - t_pre_process0).count() * 1000.0;
+	result.time_inference = static_cast<std::chrono::duration<double>>(t_inference1 - t_inference0).count() * 1000.0;
+	result.time_post_process = static_cast<std::chrono::duration<double>>(t_post_process1 - t_post_process0).count() * 1000.0;;
 
-	return RET_OK;
+	return kRetOk;
 }
 
 
-int32_t DetectionEngine::readLabel(const std::string& filename, std::vector<std::string>& labelList)
+int32_t DetectionEngine::ReadLabel(const std::string& filename, std::vector<std::string>& label_list)
 {
 	std::ifstream ifs(filename);
 	if (ifs.fail()) {
 		PRINT_E("Failed to read %s\n", filename.c_str());
-		return RET_ERR;
+		return kRetErr;
 	}
-	labelList.clear();
+	label_list.clear();
 	std::string str;
 	while (getline(ifs, str)) {
-		labelList.push_back(str);
+		label_list.push_back(str);
 	}
-	return RET_OK;
+	return kRetOk;
 }
 
 
-int32_t DetectionEngine::getObject(const OutputTensorInfo& rawOutput, std::vector<OBJECT>& objectList, double threshold, int32_t width, int32_t height)
+int32_t DetectionEngine::GetObject(const OutputTensorInfo& rawOutput, std::vector<Object>& object_list, double threshold, int32_t width, int32_t height)
 {
 	const float* p = static_cast<const float*>(rawOutput.data);
-	for (int32_t i = 0; i < rawOutput.tensorDims.height; i++) {
-		const float* values = p + (rawOutput.tensorDims.width * i);
-		OBJECT object;
-		object.classId = (int32_t)values[0];
-		object.label = m_labelList[object.classId];
+	for (int32_t i = 0; i < rawOutput.tensor_dims[1]; i++) {
+		const float* values = p + (rawOutput.tensor_dims[2] * i);
+		Object object;
+		object.class_id = (int32_t)values[0];
+		object.label = label_list_[object.class_id];
 		object.score = values[1];
 		if (object.score < threshold) continue;
 		object.x = std::max<float>(values[2], 0.0f);
@@ -198,8 +185,8 @@ int32_t DetectionEngine::getObject(const OutputTensorInfo& rawOutput, std::vecto
 			object.width *= height;
 			object.height *= height;
 		}
-		objectList.push_back(object);
+		object_list.push_back(object);
 	}
 
-	return RET_OK;
+	return kRetOk;
 }
