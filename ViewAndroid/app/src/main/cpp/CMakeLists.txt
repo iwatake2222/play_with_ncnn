@@ -72,7 +72,7 @@ target_link_libraries(native-lib ${OpenCV_LIBS})
 set(INFERENCE_HELPER_ENABLE_OPENCV OFF CACHE BOOL "OPENCV" FORCE)
 set(INFERENCE_HELPER_ENABLE_NCNN ON CACHE BOOL "NCNN")
 
-set(ImageProcessor_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../../../pj_ncnn_det_nanodet/ImageProcessor")
+set(ImageProcessor_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../../../pj_ncnn_det_nanodet/image_processor")
 message(${ImageProcessor_DIR})
 add_subdirectory(${ImageProcessor_DIR} ImageProcessor)
 target_include_directories(native-lib PUBLIC ${ImageProcessor_DIR})
