@@ -16,6 +16,7 @@
 
 /* for My modules */
 #include "common_helper.h"
+#include "common_helper_cv.h"
 #include "inference_helper.h"
 #include "detection_engine.h"
 
@@ -28,17 +29,20 @@
 //#define MODEL_NAME   "nanodet.onnx"
 //#define MODEL_NAME   "nanodet"
 #define MODEL_NAME   "nanodet_m.param"
-#define LABEL_NAME   "coco_label.txt"
+#define TENSORTYPE    TensorInfo::kTensorTypeFp32
 #define INPUT_NAME   "input.1"
 #define INPUT_DIMS    { 1, 3, 320, 320 }
+#define IS_NCHW     true
+#define IS_RGB      true
 #define OUTPUT_0_NAME  "792"
 #define OUTPUT_1_NAME  "795"
 #define OUTPUT_2_NAME  "814"
 #define OUTPUT_3_NAME  "817"
 #define OUTPUT_4_NAME  "836"
 #define OUTPUT_5_NAME  "839"
-#define TENSORTYPE    TensorInfo::kTensorTypeFp32
-#define IS_NCHW       true
+
+#define LABEL_NAME   "coco_label.txt"
+
 
 #define NUM_CLASS 80
 #define REG_MAX 7
@@ -117,11 +121,15 @@ int32_t DetectionEngine::Process(const cv::Mat& original_mat, Result& result)
     const auto& t_pre_process0 = std::chrono::steady_clock::now();
     InputTensorInfo& input_tensor_info = input_tensor_info_list_[0];
     /* do resize and color conversion here because some inference engine doesn't support these operations */
-    cv::Mat img_src;
-    cv::resize(original_mat, img_src, cv::Size(input_tensor_info.GetWidth(), input_tensor_info.GetHeight()));
-#ifndef CV_COLOR_IS_RGB
-    cv::cvtColor(img_src, img_src, cv::COLOR_BGR2RGB);
-#endif
+    int32_t crop_x = 0;
+    int32_t crop_y = 0;
+    int32_t crop_w = original_mat.cols;
+    int32_t crop_h = original_mat.rows;
+    cv::Mat img_src = cv::Mat::zeros(input_tensor_info.GetHeight(), input_tensor_info.GetWidth(), CV_8UC3);
+    //CommonHelper::CropResizeCvt(original_mat, img_src, crop_x, crop_y, crop_w, crop_h, IS_RGB, CommonHelper::kCropTypeStretch);
+    //CommonHelper::CropResizeCvt(original_mat, img_src, crop_x, crop_y, crop_w, crop_h, IS_RGB, CommonHelper::kCropTypeCut);
+    CommonHelper::CropResizeCvt(original_mat, img_src, crop_x, crop_y, crop_w, crop_h, IS_RGB, CommonHelper::kCropTypeExpand);
+
     input_tensor_info.data = img_src.data;
     input_tensor_info.data_type = InputTensorInfo::kDataTypeImage;
     input_tensor_info.image_info.width = img_src.cols;
@@ -159,10 +167,10 @@ int32_t DetectionEngine::Process(const cv::Mat& original_mat, Result& result)
 
     /* Convert coordinate (model size to image size) */
     for (auto& object : object_list_nms) {
-        object.x = (object.x * original_mat.cols) / input_tensor_info.GetWidth();
-        object.width = (object.width * original_mat.cols) / input_tensor_info.GetWidth();
-        object.y = (object.y * original_mat.rows) / input_tensor_info.GetHeight();
-        object.height = (object.height * original_mat.rows) / input_tensor_info.GetHeight();
+        object.x = (object.x * crop_w) / input_tensor_info.GetWidth() + crop_x;
+        object.width = (object.width * crop_w) / input_tensor_info.GetWidth();
+        object.y = (object.y * crop_h) / input_tensor_info.GetHeight() + crop_y;
+        object.height = (object.height * crop_h) / input_tensor_info.GetHeight();
     }
     const auto& t_post_process1 = std::chrono::steady_clock::now();
 
