@@ -47,6 +47,11 @@ Sample projects to use ncnn (https://github.com/Tencent/ncnn )
 - Download prebuilt libraries
     - Download prebuilt libraries (ThirdParty.zip) from https://github.com/iwatake2222/InferenceHelper/releases/ 
     - Extract it to `InferenceHelper/ThirdParty/`
+
+- Download prebuilt libraries from the original repo (this will overwrite the files created in the previous step)
+    - `sh ./InferenceHelper/third_party/download_ncnn.sh`
+    - You need Vulkan: https://github.com/iwatake2222/InferenceHelper#extra-steps-ncnn
+
 - Download models
     - Download models (resource.zip) from https://github.com/iwatake2222/play_with_ncnn/releases
     - Extract it to `resource/`
@@ -83,7 +88,12 @@ You will need the following settings at first.
         - select `sdk`
     - In case you cannot import OpenCV module, remove `sdk` module and dependency of `app` to `sdk` in Project Structure
 
-### How to create pre-built ncnn library
+- *Note*
+    - In case you encounter `error: use of typeid requires -frtti` error, modify `ViewAndroid\sdk\native\jni\include\opencv2\opencv_modules.hpp`
+        - `//#define HAVE_OPENCV_FLANN`
+
+
+## How to create pre-built ncnn library
 pre-built ncnn library is stored in InferenceHelper/ThirdParty/ncnn_prebuilt .
 Please follow the instruction (https://github.com/Tencent/ncnn/wiki/how-to-build ), if you want to build them by yourself.
 
