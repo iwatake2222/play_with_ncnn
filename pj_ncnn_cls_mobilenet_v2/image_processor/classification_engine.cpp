@@ -62,6 +62,7 @@ int32_t ClassificationEngine::Initialize(const std::string& work_dir, const int3
 
     /* Create and Initialize Inference Helper */
     inference_helper_.reset(InferenceHelper::Create(InferenceHelper::kNcnn));
+    //inference_helper_.reset(InferenceHelper::Create(InferenceHelper::kNcnnVulkan));
 
     if (!inference_helper_) {
         return kRetErr;
