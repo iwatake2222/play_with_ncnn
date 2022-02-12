@@ -38,7 +38,7 @@
 - Vulkan SDK (even if you don't use it)
     - https://github.com/iwatake2222/InferenceHelper#extra-steps-ncnn
 
-### 1. Common 
+### 1. Download 
 - Download source code and pre-built libraries
     ```sh
     git clone https://github.com/iwatake2222/play_with_ncnn.git
@@ -53,7 +53,7 @@
 - If you want to change pre-built library to be used, modify the following file
     - `InferenceHelper/third_party/cmakes/ncnn.cmake`
 
-### 2-a. Linux
+### 2-a. Build in Linux
 ```
 cd pj_ncnn_cls_mobilenet_v2   # for example
 mkdir -p build && cd build
@@ -62,7 +62,7 @@ make
 ./main
 ```
 
-### 2-b. Windows (Visual Studio)
+### 2-b. Build in Windows (Visual Studio)
 - Configure and Generate a new project using cmake-gui for Visual Studio 2019 64-bit
     - `Where is the source code` : path-to-play_with_ncnn/pj_ncnn_cls_mobilenet_v2	(for example)
     - `Where to build the binaries` : path-to-build	(any)
@@ -71,7 +71,7 @@ make
 
 **Note:** Debug mode in Visual Studio doesn't work because debuggable libraries are not provided
 
-### 2-c. Android project
+### 2-c. Build in Android project
 If you want to run Android project, please open `ViewAndroid` directory in Android Studio.
 
 You will need the following settings at first.
