@@ -33,12 +33,12 @@
 ```
 
 ## How to build a project
-### Requirements
+### 0. Requirements
 - OpenCV 4.x
 - Vulkan SDK (even if you don't use it)
     - https://github.com/iwatake2222/InferenceHelper#extra-steps-ncnn
 
-### Common 
+### 1. Common 
 - Download source code and pre-built libraries
     ```sh
     git clone https://github.com/iwatake2222/play_with_ncnn.git
@@ -50,8 +50,10 @@
     ```sh
     sh ./download_resource.sh
     ```
+- If you want to change pre-built library to be used, modify the following file
+    - `InferenceHelper/third_party/cmakes/ncnn.cmake`
 
-### Linux
+### 2-a. Linux
 ```
 cd pj_ncnn_cls_mobilenet_v2   # for example
 mkdir -p build && cd build
@@ -60,7 +62,7 @@ make
 ./main
 ```
 
-### Windows (Visual Studio)
+### 2-b. Windows (Visual Studio)
 - Configure and Generate a new project using cmake-gui for Visual Studio 2019 64-bit
     - `Where is the source code` : path-to-play_with_ncnn/pj_ncnn_cls_mobilenet_v2	(for example)
     - `Where to build the binaries` : path-to-build	(any)
@@ -69,7 +71,7 @@ make
 
 **Note:** Debug mode in Visual Studio doesn't work because debuggable libraries are not provided
 
-### Android project
+### 2-c. Android project
 If you want to run Android project, please open `ViewAndroid` directory in Android Studio.
 
 You will need the following settings at first.
